@@ -583,6 +583,9 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         `
         }
+        <button class="share-button" data-activity="${name}" aria-label="Share ${name}">
+          🔗 Share
+        </button>
       </div>
     `;
 
@@ -602,7 +605,71 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Add click handler for share button
+    const shareButton = activityCard.querySelector(".share-button");
+    shareButton.addEventListener("click", (event) => {
+      shareActivity(event, name, details);
+    });
+
     activitiesList.appendChild(activityCard);
+  }
+
+  // Share an activity via Web Share API or social platform links
+  function shareActivity(event, name, details) {
+    const shareText = `Check out ${name} at Mergington High School! ${details.description}`;
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: name,
+        text: shareText,
+        url: shareUrl,
+      }).catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("Share failed:", err);
+        }
+      });
+    } else {
+      toggleShareOptions(event.currentTarget, shareText, shareUrl);
+    }
+  }
+
+  // Show or hide the social share options panel below a button
+  function toggleShareOptions(button, shareText, shareUrl) {
+    // If this button's panel is already open, close it (toggle off)
+    const existingPanel = button.parentNode.querySelector(".share-options");
+    if (existingPanel) {
+      existingPanel.remove();
+      return;
+    }
+
+    // Close any other open share panels
+    document.querySelectorAll(".share-options").forEach((panel) => panel.remove());
+
+    const panel = document.createElement("div");
+    panel.className = "share-options";
+    panel.innerHTML = `
+      <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}"
+         target="_blank" rel="noopener noreferrer" class="share-option share-twitter">
+        𝕏 X
+      </a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}"
+         target="_blank" rel="noopener noreferrer" class="share-option share-facebook">
+        Facebook
+      </a>
+    `;
+
+    button.parentNode.appendChild(panel);
+
+    // Close panel when clicking outside of it
+    setTimeout(() => {
+      document.addEventListener("click", function closePanel(e) {
+        if (!panel.contains(e.target) && e.target !== button) {
+          panel.remove();
+          document.removeEventListener("click", closePanel);
+        }
+      });
+    }, 0);
   }
 
   // Event listeners for search and filter
